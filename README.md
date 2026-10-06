@@ -1,1 +1,500 @@
-# sbom-sentinel
+# SBOM Sentinel
+
+> **Know what to fix first.**\
+> Explainable prioritization for software dependency vulnerabilities.
+
+SBOM Sentinel is a proposed security and machine-learning system for
+helping engineering and security teams decide **which software
+dependency vulnerabilities should be investigated first**.
+
+Modern applications can contain a large number of third-party
+dependencies and vulnerability findings. A vulnerability list alone does
+not answer the operational question: **What should the team spend its
+next hour investigating?**
+
+SBOM Sentinel addresses this problem by combining Software Bill of
+Materials (SBOM) information with vulnerability intelligence, dependency
+context, reachability, package health, and other repository signals, and
+then using a trained ranking model to produce an explainable
+investigation priority.
+
+> **Project status:** Proposed / research-oriented MVP. The
+> implementation focus is SBOM upload/import → enrichment → ranking →
+> dashboard. Automated repository scanning and continuous integrations
+> are considered extensions.
+
+------------------------------------------------------------------------
+
+## Table of Contents
+
+-   [Problem](#problem)
+-   [Project Objective](#project-objective)
+-   [Project Scope](#project-scope)
+-   [System Workflow](#system-workflow)
+-   [Core Intelligence](#core-intelligence)
+-   [Machine Learning](#machine-learning)
+-   [Example](#example)
+-   [Explainability](#explainability)
+-   [MVP](#mvp)
+-   [Product Vision](#product-vision)
+-   [Research Question](#research-question)
+-   [Research Foundation](#research-foundation)
+-   [Project Team](#project-team)
+-   [Future Extensions](#future-extensions)
+-   [Disclaimer](#disclaimer)
+
+------------------------------------------------------------------------
+
+## Problem
+
+A vulnerability scanner can produce a list of vulnerable dependencies,
+but a vulnerability list still leaves an important decision:
+
+> **Which finding matters here, and what should we investigate next?**
+
+Severity alone is not always enough to determine the practical priority
+of a vulnerability in a particular application.
+
+For example, two vulnerabilities may have the same CVSS score while
+differing significantly in:
+
+-   Known exploitation
+-   Application reachability
+-   Dependency depth
+-   Dependency relationships
+-   Package maintenance activity
+-   Release activity
+-   Available security evidence
+
+SBOM Sentinel therefore focuses on **vulnerability prioritization**,
+rather than simply producing another vulnerability list.
+
+------------------------------------------------------------------------
+
+## Project Objective
+
+The primary objective of SBOM Sentinel is to create an **ordered,
+explainable investigation queue** for software dependency risks.
+
+The system aims to:
+
+1.  Understand the software components and dependencies in an
+    application through an SBOM.
+2.  Enrich dependency and vulnerability information with security
+    intelligence.
+3.  Analyze dependency and reachability context.
+4.  Combine multiple signals using a machine-learning ranking model.
+5.  Produce a priority ranking for investigation.
+6.  Show the evidence and factors behind the ranking.
+7.  Support human review when important context is uncertain or missing.
+
+------------------------------------------------------------------------
+
+## Project Scope
+
+The proposed project-domain composition is:
+
+  Area                            Estimated Scope
+  ----------------------------- -----------------
+  ML / Data Science                           35%
+  Cybersecurity                               30%
+  Backend / Data Engineering                  15%
+  Graph / Dependency Analysis                 10%
+  Frontend / Product                           5%
+  DevOps / MLOps                               5%
+
+These are project-domain estimates, not percentages of AI-tool usage.
+
+------------------------------------------------------------------------
+
+## System Workflow
+
+The proposed end-to-end workflow is:
+
+``` text
+                Software Repository / Existing SBOM
+                              |
+                              v
+                     Generate / Import SBOM
+                              |
+                              v
+                  Detect Vulnerable Dependencies
+                              |
+                              v
+              +-------------------------------+
+              | Security & Repository Signals |
+              |                               |
+              | OSV • NVD • KEV • EPSS       |
+              | + repository signals          |
+              +-------------------------------+
+                              |
+                              v
+                  Dependency & Reachability
+                           Analysis
+                              |
+                              v
+                     ML Ranking Model
+                              |
+                              v
+                    Priority Ranking
+                       + Explanations
+                              |
+                              v
+                    Security Dashboard
+                              |
+                              v
+              Downstream Integrations / Actions
+              GitHub • Jira • Discord • CI/CD
+```
+
+### MVP boundary
+
+The MVP focuses on:
+
+``` text
+SBOM Upload / Import
+        ↓
+Vulnerability & Security Enrichment
+        ↓
+Dependency / Reachability Analysis
+        ↓
+ML Prioritization
+        ↓
+Explainable Investigation Queue
+        ↓
+Dashboard
+```
+
+Automated repository scanning and continuous integrations can be treated
+as later extensions.
+
+------------------------------------------------------------------------
+
+## SBOM
+
+A Software Bill of Materials provides structured information about the
+software components used by an application.
+
+SBOM Sentinel uses the SBOM as the starting point for understanding:
+
+-   Software components
+-   Component versions
+-   Dependency relationships
+-   Dependency context
+-   Potentially vulnerable dependencies
+
+The proposed workflow supports generating or importing an SBOM.
+
+------------------------------------------------------------------------
+
+## Core Intelligence
+
+SBOM Sentinel combines several categories of evidence rather than
+relying on one security score.
+
+### Security evidence
+
+-   Vulnerability severity
+-   Known exploitation
+-   Published exploitability signals
+
+### Package health
+
+-   Package maintenance
+-   Package activity
+-   Release activity / release frequency
+
+### Application context
+
+-   Dependency relationships
+-   Dependency depth
+-   Reachability when verified
+-   Explicit unknown / missing data
+
+The system is designed to preserve an **unknown** state when information
+such as reachability cannot be verified instead of treating missing
+information as a definitive negative.
+
+------------------------------------------------------------------------
+
+## Machine Learning
+
+The ML component learns a **multi-signal priority ranking** rather than
+relying on severity alone.
+
+Conceptually:
+
+``` text
+Security Signals
+       +
+Dependency Context
+       +
+Reachability
+       +
+Package Health
+       +
+Repository Signals
+       |
+       v
+ ML Ranking Model
+       |
+       v
+Priority Ranking
+```
+
+Example feature groups include:
+
+``` text
+CVSS
+Known exploitation
+Reachability
+Dependency context
+Package health
+Release activity
+```
+
+The model's output is an **investigation priority ranking**, for
+example:
+
+``` text
+#1  Fix Now
+#2  Investigate
+#3  Monitor
+```
+
+The project is therefore a ranking/prioritization system rather than
+simply a binary vulnerability detector.
+
+------------------------------------------------------------------------
+
+## Example
+
+Consider two vulnerabilities:
+
+### Vulnerability A
+
+``` text
+CVSS             = 9.8
+Known exploited  = Yes
+Dependency depth = 2
+Reachable        = Yes
+Package activity = Low
+Release frequency= Low
+```
+
+### Vulnerability B
+
+``` text
+CVSS             = 9.8
+Known exploited  = No
+Dependency depth = 8
+Reachable        = No
+Package activity = High
+Release frequency= High
+```
+
+A severity-only approach may treat both findings similarly because both
+have a CVSS score of 9.8.
+
+SBOM Sentinel considers the additional signals and uses them to
+determine a more context-aware investigation order.
+
+The goal is to answer:
+
+> **Which vulnerability should the security team investigate first?**
+
+------------------------------------------------------------------------
+
+## Explainability
+
+A high-priority result should not be a black box.
+
+SBOM Sentinel is designed to show the factors that contributed to a
+finding's priority.
+
+The investigation interface is intended to provide:
+
+-   Priority
+-   Security evidence
+-   Exploitation evidence
+-   Dependency context
+-   Reachability information
+-   Package context
+-   Recommended next action
+
+The project also proposes explainability for the trained ranking model
+so users can understand **which factors changed the priority**.
+
+Human review remains important when context is uncertain.
+
+------------------------------------------------------------------------
+
+## MVP
+
+The proposed MVP interface centers on an **Investigation Queue**.
+
+Conceptually, the queue contains:
+
+  -----------------------------------------------------------------------
+  Priority          Package           Evidence          Action
+  ----------------- ----------------- ----------------- -----------------
+  1                 High-risk         Known             Investigate now
+                    dependency        exploitation +    
+                                      reachable path    
+
+  2                 High-severity     Reachability      Verify exposure
+                    dependency        unknown           
+
+  3                 Lower-priority    Limited context   Review
+                    dependency                          
+  -----------------------------------------------------------------------
+
+The interface is intended to make the next security action clear rather
+than simply presenting a large list of CVEs.
+
+------------------------------------------------------------------------
+
+## Product Vision
+
+The product vision is:
+
+> **A clear next action for every dependency risk decision.**
+
+The system aims to provide:
+
+-   An ordered queue
+-   Visible evidence
+-   Human review where context is uncertain
+
+The central product idea is:
+
+``` text
+Many vulnerability findings
+          ↓
+Context + evidence
+          ↓
+Prioritized investigation queue
+          ↓
+Clear next action
+```
+
+------------------------------------------------------------------------
+
+## Research Question
+
+The central research question is:
+
+> **Can multi-signal ML prioritization improve investigation ordering
+> over severity-only or rule-based baselines?**
+
+The project therefore evaluates the usefulness of combining multiple
+signals rather than assuming that a single security metric is
+sufficient.
+
+------------------------------------------------------------------------
+
+## Research Foundation
+
+The SBOM Sentinel concept is founded on the paper:
+
+**Supply Chain Risk Analysis via SBOM Data Enrichment**
+
+**Authors:** Antoine Lemay & Neeraj Katiyar\
+**Conference:** 2025 IEEE International Systems Conference (SysCon)
+
+The reference work enriches SBOM information with repository maintenance
+metadata to analyze software supply-chain risk and identify libraries
+with risk factors associated with XZ-style infiltration.
+
+### How SBOM Sentinel extends the foundation
+
+SBOM Sentinel proposes a practical prioritization layer that combines:
+
+-   Vulnerability information
+-   Exploitability
+-   Dependency information
+-   Reachability
+-   Package-health signals
+
+and then:
+
+``` text
+Combine signals
+      ↓
+Learn a ranking
+      ↓
+Explain the ranking
+      ↓
+Produce investigation order
+```
+
+------------------------------------------------------------------------
+
+## Project Team
+
+**Under the guidance of:**
+
+Dr. B. Bhaskara Rao, M.Tech., Ph.D.\
+Associate Professor & HOD\
+Department of CSE (Data Science)
+
+**Prepared by:**
+
+-   M. Uday Kumar Reddy --- 23091A32H2
+-   S. Vasavi --- 23091A32H7
+-   S. Vaseem Basha --- 23091A32H8
+
+**Program:** IV B.Tech --- CSE (Data Science)\
+**Academic Year:** 2026--2027
+
+------------------------------------------------------------------------
+
+## Future Extensions
+
+The project presentation identifies the following as possible downstream
+or extended capabilities:
+
+-   Automated repository scanning
+-   Continuous security scanning
+-   GitHub integrations
+-   Jira integrations
+-   Discord integrations
+-   CI/CD integrations
+-   Additional automated security actions
+
+These capabilities are extensions of the MVP rather than its core
+implementation focus.
+
+------------------------------------------------------------------------
+
+## Disclaimer
+
+SBOM Sentinel is a research and final-year project concept focused on
+vulnerability prioritization.
+
+The priority produced by the system should support security
+investigation and human decision-making. It should not be treated as an
+automatic replacement for security engineering judgment, especially when
+dependency reachability or other application context is uncertain.
+
+------------------------------------------------------------------------
+
+## Project Summary
+
+``` text
+SBOM
+  ↓
+Security Intelligence
+  ↓
+Dependency & Reachability Context
+  ↓
+Multi-Signal ML Ranking
+  ↓
+Explainable Priority
+  ↓
+Investigation Queue
+  ↓
+Clear Next Action
+```
+
+**SBOM Sentinel --- Know what to fix first.**
